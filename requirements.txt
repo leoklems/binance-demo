@@ -1,0 +1,4 @@
+starlette==0.38.2
+uvicorn==0.30.5
+binance-connector==3.8.1 # https://binance-connector.readthedocs.io/en/latest/getting_started.html
+ipython==8.26.0

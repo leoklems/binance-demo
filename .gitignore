@@ -1,0 +1,5 @@
+venv
+*.pyc
+startup.sh
+__pycache__
+*.env
