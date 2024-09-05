@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Page</title>
+</head>
+<body>
+    <h1>Place an Order</h1>
+    <form action="/order/submit" method="POST">
+        <label for="symbol">Symbol:</label>
+        <input type="text" id="symbol" name="symbol"><br><br>
+        <label for="quantity">Quantity:</label>
+        <input type="text" id="quantity" name="quantity"><br><br>
+        <label for="side">Side:</label>
+        <select id="side" name="side">
+            <option value="BUY">Buy</option>
+            <option value="SELL">Sell</option>
+        </select><br><br>
+        <input type="submit" value="Place Order">
+    </form>
+</body>
+</html>
