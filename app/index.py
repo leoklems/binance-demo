@@ -76,8 +76,11 @@ def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
 async def order_endpoint(request):
     print("started..")
     try:
-        body = await request.json()
-        print(body)
+        # Check if the request is JSON or form data
+        if request.headers.get('content-type') == 'application/json':
+            body = await request.json()
+        else:
+            body = await request.form()
         symbol = body.get('symbol')
         print(symbol)
         quantity = float(body.get('quantity'))
