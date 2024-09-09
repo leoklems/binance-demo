@@ -43,6 +43,9 @@ def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
     endpoint = '/order'
     url = base_url + endpoint
 
+    # Debugging logs
+    print(f"Symbol: {symbol}, Quantity: {quantity}, Side: {side}")
+
     data = {
         'symbol': symbol,
         'side': side,
@@ -56,16 +59,22 @@ def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
 
     data['signature'] = signature
 
+    print(data)
+
     headers = {
         'X-MBX-APIKEY': api_key,
         "Content-Type": "application/json"
     }
     
+    print("headers : ", headers)
     response = requests.post(url, headers=headers, json=data)
+    print("response parsed")
 
     if response.content:
+        print("we have content")
         try:
             response_json = response.json()
+            print("we have json response")
             return response_json
         except requests.exceptions.JSONDecodeError as e:
             return {"error": "Failed to decode JSON", "details": str(e)}
@@ -74,24 +83,23 @@ def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
 
 
 async def order_endpoint(request):
-    print("started..")
     try:
-        # Check if the request is JSON or form data
         if request.headers.get('content-type') == 'application/json':
             body = await request.json()
         else:
             body = await request.form()
+        
         symbol = body.get('symbol')
-        print(symbol)
         quantity = float(body.get('quantity'))
         side = body.get('side')
-        print(side)
+
+        # Debugging logs
+        print(f"Symbol: {symbol}, Quantity: {quantity}, Side: {side}")
 
         if not symbol or not quantity or not side:
             return JSONResponse({'error': 'Missing required parameters'}, status_code=400)
 
         order_response = place_market_order(symbol, quantity, side)
-
         return JSONResponse(order_response)
     except Exception as e:
         return JSONResponse({'error': str(e)}, status_code=500)
