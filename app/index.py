@@ -5,7 +5,7 @@ from starlette.templating import Jinja2Templates
 from service.binance_service import BinanceService
 from binance.client import Client
 from settings import BINANCE_API_KEY, BINANCE_API_SECRET, DEBUG
-from binance.enums import SIDE_BUY, ORDER_TYPE_MARKET
+from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
 import time
 import hmac 
 import hashlib
@@ -35,8 +35,14 @@ async def order_page(request):
     return templates.TemplateResponse("order.html", {"request": request})
 
 async def balance(request):
-    account_info = client.get_account()
+    account_info = service.client.get_account()
     return JSONResponse(account_info)
+
+async def history(request):
+    # trades = service.client.get_open_orders(symbol="BTCUSDT")
+    trades = service.get_trade_history(symbol="BTCUSDT")
+    print("Trade Open:", trades)
+    return JSONResponse(trades)
 
 # Function to place a market order
 def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
@@ -88,20 +94,34 @@ async def order_endpoint(request):
             body = await request.json()
         else:
             body = await request.form()
-        
-        symbol = body.get('symbol')
-        quantity = float(body.get('quantity'))
-        side = body.get('side')
+
+        symbol = body.get('symbol', 'BTCUSDT')
+        quantity = float(body.get('quantity', 0.01))
+        side = body.get('side', 'BUY').upper()
 
         # Debugging logs
         print(f"Symbol: {symbol}, Quantity: {quantity}, Side: {side}")
 
+        # Validate input parameters
         if not symbol or not quantity or not side:
             return JSONResponse({'error': 'Missing required parameters'}, status_code=400)
 
-        order_response = place_market_order(symbol, quantity, side)
+        # Map side to Binance enums
+        side_enum = SIDE_BUY if side == 'BUY' else SIDE_SELL
+
+        # Place the order using BinanceService
+        order_response = service.place_order(
+            symbol=symbol,
+            side=side_enum,
+            order_type=ORDER_TYPE_MARKET,
+            quantity=quantity
+        )
+
+        # Return the order response as JSON
         return JSONResponse(order_response)
+
     except Exception as e:
+        print(f"Error placing order: {e}")
         return JSONResponse({'error': str(e)}, status_code=500)
 
 app = Starlette(
@@ -110,6 +130,7 @@ app = Starlette(
         Route("/", homepage),
         Route("/order/", order_page),  # Route for rendering order page
         Route("/account/", balance),
+        Route("/history/", history),
         Route('/order/submit', order_endpoint, methods=["POST"]),  # Separate route for POST request
     ],
 )
