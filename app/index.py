@@ -1,5 +1,5 @@
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, HTMLResponse
 from starlette.routing import Route
 from starlette.templating import Jinja2Templates
 from service.binance_service import BinanceService
@@ -34,6 +34,9 @@ async def homepage(request):
 async def order_page(request):
     return templates.TemplateResponse("order.html", {"request": request})
 
+async def btc_pricing_page(request):
+    return templates.TemplateResponse("btc_pricing_form.html", {"request": request})
+
 async def balance(request):
     account_info = service.client.get_account()
     return JSONResponse(account_info)
@@ -43,49 +46,6 @@ async def history(request):
     trades = service.get_trade_history(symbol="BTCUSDT")
     print("Trade Open:", trades)
     return JSONResponse(trades)
-
-# Function to place a market order
-def place_market_order(symbol='BTCUSDT', quantity=0.01, side=SIDE_BUY):
-    endpoint = '/order'
-    url = base_url + endpoint
-
-    # Debugging logs
-    print(f"Symbol: {symbol}, Quantity: {quantity}, Side: {side}")
-
-    data = {
-        'symbol': symbol,
-        'side': side,
-        'type': 'MARKET',
-        'quantity': quantity,
-        'timestamp': int(time.time() * 1000)
-    }
-
-    query_string = '&'.join([f"{key}={value}" for key, value in data.items()])
-    signature = hmac.new(api_secret.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-
-    data['signature'] = signature
-
-    print(data)
-
-    headers = {
-        'X-MBX-APIKEY': api_key,
-        "Content-Type": "application/json"
-    }
-    
-    print("headers : ", headers)
-    response = requests.post(url, headers=headers, json=data)
-    print("response parsed")
-
-    if response.content:
-        print("we have content")
-        try:
-            response_json = response.json()
-            print("we have json response")
-            return response_json
-        except requests.exceptions.JSONDecodeError as e:
-            return {"error": "Failed to decode JSON", "details": str(e)}
-    else:
-        return {"error": "Empty response received."}
 
 
 async def order_endpoint(request):
@@ -124,14 +84,51 @@ async def order_endpoint(request):
         print(f"Error placing order: {e}")
         return JSONResponse({'error': str(e)}, status_code=500)
 
+async def fetch_prices(request):
+    try:
+        form = await request.form()
+
+        symbol = 'BTCUSDT'
+        interval = Client.KLINE_INTERVAL_1DAY  # 1 day interval
+        start_date = form['start_date']
+        end_date = form['end_date']
+
+        # Debugging logs
+        print(f"Symbol: {symbol}, start_date: {start_date}, end_date: {end_date}")
+
+        # Validate input parameters
+        if not symbol or not start_date or not end_date:
+            return JSONResponse({'error': 'Missing required parameters'}, status_code=400)
+
+        # Place the order using BinanceService
+        order_response = service.get_historical_klines(
+            symbol=symbol,
+            interval=interval,
+            start_str=start_date,
+            end_str=end_date
+        )
+
+        # Return the order response as JSON
+        return HTMLResponse(order_response.to_html())
+
+    except Exception as e:
+        print(f"Error placing order: {e}")
+        return JSONResponse({'error': str(e)}, status_code=500)
+
+    # form = await request.form()
+    # start_date = form['start_date']
+    # end_date = form['end_date']
+
 app = Starlette(
     debug=True,
     routes=[
         Route("/", homepage),
         Route("/order/", order_page),  # Route for rendering order page
+        Route("/pricing/", btc_pricing_page),  # Route for rendering order page
         Route("/account/", balance),
         Route("/history/", history),
         Route('/order/submit', order_endpoint, methods=["POST"]),  # Separate route for POST request
+        Route('/fetch_prices', endpoint=fetch_prices, methods=['POST']),
     ],
 )
 

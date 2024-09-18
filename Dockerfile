@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 
+# Copy the env files into the container
+COPY config.env /app/config.env
+
 # Change the working directory to the app subdirectory
 WORKDIR /app/app
 

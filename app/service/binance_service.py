@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from binance.spot import Spot
 import typing
+import pandas as pd
 
 
 @dataclass
@@ -46,4 +47,17 @@ class BinanceService:
         except Exception as e:
             print(f"Failed to fetch trade history: {e}")
             return None
+    
+    # Fetch historical klines (candlestick data)
+    def get_historical_klines(self, symbol, interval, start_str, end_str=None):
+        klines = self.client.get_historical_klines(symbol, interval, start_str, end_str)
+        # Convert to a DataFrame
+        df = pd.DataFrame(klines, columns=[
+            'timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time',
+            'quote_asset_volume', 'number_of_trades', 'taker_buy_base_asset_volume',
+            'taker_buy_quote_asset_volume', 'ignore'
+        ])
+        # Convert timestamp to datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        return df
 

@@ -3,4 +3,5 @@ venv
 startup.sh
 __pycache__
 *.env
+*config.env
 app/my_stuff
