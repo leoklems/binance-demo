@@ -6,6 +6,7 @@ from service.binance_service import BinanceService
 from binance.client import Client
 from settings import BINANCE_API_KEY, BINANCE_API_SECRET, DEBUG
 from binance.enums import SIDE_BUY, SIDE_SELL, ORDER_TYPE_MARKET
+from threading import Thread
 import time
 import hmac 
 import hashlib
@@ -38,7 +39,7 @@ async def btc_pricing_page(request):
     return templates.TemplateResponse("btc_pricing_form.html", {"request": request})
 
 async def balance(request):
-    account_info = service.client.get_account()
+    account_info = service.get_account_details()
     return JSONResponse(account_info)
 
 async def history(request):
@@ -119,6 +120,15 @@ async def fetch_prices(request):
     # start_date = form['start_date']
     # end_date = form['end_date']
 
+async def start_kline_stream(request):
+    symbol = request.path_params['symbol']
+    interval = request.path_params['interval']
+    print(f"Received request to start kline stream for {symbol} with interval {interval}")
+    thread = Thread(target=service.start_kline_stream, args=(symbol, interval))
+    thread.start()
+    return JSONResponse({"message": f"Started Kline stream for {symbol} with interval {interval}"})
+
+
 app = Starlette(
     debug=True,
     routes=[
@@ -129,6 +139,8 @@ app = Starlette(
         Route("/history/", history),
         Route('/order/submit', order_endpoint, methods=["POST"]),  # Separate route for POST request
         Route('/fetch_prices', endpoint=fetch_prices, methods=['POST']),
+        Route('/start_kline_stream/{symbol:str}/{interval:str}', start_kline_stream),
+        # Route('/start_kline_stream/btcusdt/1m', start_kline_stream),
     ],
 )
 
