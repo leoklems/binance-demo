@@ -50,6 +50,15 @@ class BinanceService:
             print(f"Failed to fetch trade history: {e}")
             return None
     
+    def get_open_orders(self, symbol: str):
+        """Fetch trade history for a specific symbol"""
+        try:
+            trades = self.client.get_open_orders(symbol=symbol)
+            return trades
+        except Exception as e:
+            print(f"Failed to fetch open orders: {e}")
+            return None
+
     def get_account_details(self):
         """Fetch account details"""
         try:
