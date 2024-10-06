@@ -10,3 +10,4 @@ websocket-client
 itsdangerous==2.2.0
 bcrypt==4.2.0
 starlette-authlib==0.3.2
+sqlalchemy==2.0.35
