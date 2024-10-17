@@ -26,7 +26,7 @@ import sqlite3
 
 # Database setup
 def get_db_connection():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('my.db')
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -35,11 +35,12 @@ async def register(request):
     if request.method == 'POST':
         form = await request.form()
         username = form['username']
+        email = form['email']
         password = form['password']
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         conn = get_db_connection()
-        conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_password))
+        conn.execute('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', (username, email, hashed_password))
         conn.commit()
         conn.close()
 

@@ -1,3 +1,4 @@
+import base64
 from starlette.applications import Starlette
 from starlette.responses import JSONResponse, HTMLResponse, RedirectResponse
 from starlette.routing import Route, Mount
@@ -23,17 +24,12 @@ import uvicorn
 import sqlite3
 import os
 from routes import routes as routes
+# from index import SimpleAuthBackend
+import logging
+import secrets
 
-secret_key = os.urandom(24)
-
-# # Define a simple authentication backend
-# class SimpleAuthBackend(AuthenticationBackend):
-#     async def authenticate(self, request):
-#         if "user" in request.session:
-#             return AuthCredentials(["authenticated"]), SimpleUser(request.session["user"])
-#         return AuthCredentials([]), None
-
-
+secret_key = secrets.token_urlsafe(32)
+print(secret_key)
 
 app = Starlette(
     debug=True,
@@ -42,13 +38,49 @@ app = Starlette(
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount('/static', StaticFiles(directory='static'), name='static')
 templates = Jinja2Templates(directory='templates')
-# app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
+# Add the SessionMiddleware first
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
+logging.debug("SessionMiddleware added")
+
+
+# class SimpleAuthBackend(AuthenticationBackend):
+#     async def authenticate(self, request):
+#         if "user" in request.session:
+#             username = request.session["user"]
+#             # Add logic to verify the user's credentials
+#             if self.verify_credentials(username):  # Replace with your own verification logic
+#                 return AuthCredentials(["authenticated"]), SimpleUser (username)
+#         return AuthCredentials([]), None
+
+#     def verify_credentials(self, username):
+#         # Replace with your own verification logic
+#         # For example, you could check a database to see if the username exists
+#         # or if the username and password match
+#         return True  # Replace with your own verification logic
+
+class BasicAuthBackend(AuthenticationBackend):
+    async def authenticate(self, request):
+        auth = request.headers.get('Authorization')
+        if auth:
+            scheme, _, credentials = auth.partition(' ')
+            if scheme.lower() == 'basic':
+                # Decode the credentials and verify them
+                username, password = base64.b64decode(credentials).decode().split(':', 1)
+                if self.verify_credentials(username, password):
+                    return AuthCredentials(['authenticated']), SimpleUser (username)
+        return None
+
+    def verify_credentials(self, username, password):
+        # Replace this with your own verification logic
+        return username == "admin" and password == "secret"
+# Add the AuthenticationMiddleware
 # app.add_middleware(AuthenticationMiddleware, backend=SimpleAuthBackend())
-# app.router.routes.extend(routes)
-# @app.route('/logout')
-# async def logout(request):
-#     request.session.clear()
-#     return RedirectResponse(url='/login', status_code=303)
+app.add_middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
+logging.debug("AuthenticationMiddleware added")
+
+# Define the routes
+app.router.routes.extend(routes)
 
 
 # Key Changes:
