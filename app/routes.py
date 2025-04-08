@@ -69,6 +69,7 @@ async def login(request):
 
 api_key = BINANCE_API_KEY
 api_secret = BINANCE_API_SECRET
+print(api_key, ":", api_secret)
 
 # Binance API base URL for the Testnet
 base_url = 'https://testnet.binance.vision/api/v3'

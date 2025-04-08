@@ -87,3 +87,5 @@ app.router.routes.extend(routes)
 # Route Change: The /order/ route now correctly points to the order_endpoint function.
 # requests.post() Call: The data is passed as json=data, ensuring proper JSON serialization.
 # Balance Endpoint: The balance function returns a JSON response to ensure the client receives it correctly.
+
+# uvicorn app:app --reload
